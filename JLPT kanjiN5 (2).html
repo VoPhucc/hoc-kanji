@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JLPT N5 漢字学習</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .kanji-display {
+      margin: 20px 0;
+      word-break: break-all;
+      color: #000;
+      text-align: center;
+      transition: font-size 0.3s ease;
+    }
+    .info {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    input {
+      padding: 10px;
+      font-size: 1em;
+      width: 80%;
+      max-width: 400px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal-content p {
+      margin: 10px 0;
+    }
+    .modal-content button {
+      margin: 0 5px;
+    }
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 600px) {
+      input { width: 70%; }
+      button { font-size: 0.9em; padding: 8px 15px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>JLPT N5 漢字学習</h1>
+  <div class="kanji-display" id="current-kanji"></div>
+  <div class="info" id="kanji-info"></div>
+  <input type="text" id="user-input" placeholder="読み方">
+  <div class="button-container">
+    <button onclick="checkAnswer()">確認</button>
+    <button onclick="showAnswer()">分からない</button>
+  </div>
+  <div id="result"></div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <p id="modal-answer"></p>
+      <p id="modal-vietnamese"></p>
+      <button onclick="closeModal()">OK</button>
+    </div>
+  </div>
+
+  <script>
+    const kanjiList = [
+      // Số
+      { kanji: "一", reading: "いち", hanViet: "Nhất", vietnamese: "Một" },
+      { kanji: "二", reading: "に", hanViet: "Nhị", vietnamese: "Hai" },
+      { kanji: "三", reading: "さん", hanViet: "Tam", vietnamese: "Ba" },
+      { kanji: "四", reading: "よん", hanViet: "Tứ", vietnamese: "Bốn" },
+      { kanji: "五", reading: "ご", hanViet: "Ngũ", vietnamese: "Năm" },
+      { kanji: "六", reading: "ろく", hanViet: "Lục", vietnamese: "Sáu" },
+      { kanji: "七", reading: "なな", hanViet: "Thất", vietnamese: "Bảy" },
+      { kanji: "八", reading: "はち", hanViet: "Bát", vietnamese: "Tám" },
+      { kanji: "九", reading: "きゅう", hanViet: "Cửu", vietnamese: "Chín" },
+      { kanji: "十", reading: "じゅう", hanViet: "Thập", vietnamese: "Mười" },
+
+  // Danh từ
+      { kanji: "日", reading: "ひ", hanViet: "Nhật", vietnamese: "Ngày" },
+      { kanji: "月", reading: "つき", hanViet: "Nguyệt", vietnamese: "Tháng" },
+      { kanji: "火", reading: "か", hanViet: "Hỏa", vietnamese: "Lửa" },
+      { kanji: "水", reading: "みず", hanViet: "Thủy", vietnamese: "Nước" },
+      { kanji: "木", reading: "き", hanViet: "Mộc", vietnamese: "Cây" },
+      { kanji: "金", reading: "きん", hanViet: "Kim", vietnamese: "Vàng" },
+      { kanji: "土", reading: "つち", hanViet: "Thổ", vietnamese: "Đất" },
+      { kanji: "山", reading: "やま", hanViet: "Sơn", vietnamese: "Núi" },
+      { kanji: "川", reading: "かわ", hanViet: "Hà", vietnamese: "Sông" },
+      { kanji: "人", reading: "ひと", hanViet: "Nhân", vietnamese: "Người" },
+      { kanji: "口", reading: "くち", hanViet: "Khẩu", vietnamese: "Miệng" },
+      { kanji: "目", reading: "め", hanViet: "Mục", vietnamese: "Mắt" },
+      { kanji: "耳", reading: "みみ", hanViet: "Nhĩ", vietnamese: "Tai" },
+      { kanji: "手", reading: "て", hanViet: "Thủ", vietnamese: "Tay" },
+      { kanji: "足", reading: "あし", hanViet: "Túc", vietnamese: "Chân" },
+      { kanji: "頭", reading: "あたま", hanViet: "Đầu", vietnamese: "Đầu" },
+      { kanji: "心", reading: "こころ", hanViet: "Tâm", vietnamese: "Trái tim" },
+      { kanji: "家", reading: "うち", hanViet: "Gia", vietnamese: "Nhà" },
+      { kanji: "店", reading: "みせ", hanViet: "Điếm", vietnamese: "Cửa hàng" },
+      { kanji: "車", reading: "くるま", hanViet: "Xa", vietnamese: "Xe" },
+
+      // Động từ
+      { kanji: "来る", reading: "くる", hanViet: "Lai", vietnamese: "Đến" },
+      { kanji: "行く", reading: "いく", hanViet: "Hành", vietnamese: "Đi" },
+ 
+      { kanji: "買う", reading: "かう", hanViet: "Mãi", vietnamese: "Mua" },
+      { kanji: "売る", reading: "うる", hanViet: "Mại", vietnamese: "Bán" },
+      { kanji: "飲む", reading: "のむ", hanViet: "Ẩm", vietnamese: "Uống" },
+      { kanji: "読む", reading: "よむ", hanViet: "Độc", vietnamese: "Đọc" },
+      { kanji: "書く", reading: "かく", hanViet: "Thư", vietnamese: "Viết" },
+      { kanji: "開く", reading: "ひらく", hanViet: "Khải", vietnamese: "Mở" },
+      { kanji: "閉める", reading: "しめる", hanViet: "Bế", vietnamese: "Đóng" },
+
+      // Tính từ
+      { kanji: "暑い", reading: "あつい", hanViet: "Nhiệt", vietnamese: "Nóng" },
+      { kanji: "冷たい", reading: "つめたい", hanViet: "Lãnh", vietnamese: "Lạnh" },
+      { kanji: "重い", reading: "おもい", hanViet: "Trọng", vietnamese: "Nặng" },
+      { kanji: "強い", reading: "つよい", hanViet: "Cường", vietnamese: "Lạnh" },
+      { kanji: "安い", reading: "やすい", hanViet: "An", vietnamese: "Mạnh" },
+      { kanji: "高い", reading: "たかい", hanViet: "Cao", vietnamese: "Đắt" },
+      { kanji: "遠い", reading: "とおい", hanViet: "Viễn", vietnamese: "Xa" },
+      { kanji: "近い", reading: "ちかい", hanViet: "Cận", vietnamese: "Gần" },
+
+      // Các từ khác từ danh sách cũ
+      { kanji: "一つ", reading: "ひとつ", hanViet: "Nhất", vietnamese: "Một" },
+      { kanji: "立つ", reading: "たつ", hanViet: "Lập", vietnamese: "Đứng" },
+      { kanji: "食べる", reading: "たべる", hanViet: "Thực", vietnamese: "Ăn" },
+      { kanji: "電話", reading: "でんわ", hanViet: "Điện thoại", vietnamese: "Điện thoại" },
+      { kanji: "低い", reading: "ひくい", hanViet: "Thấp", vietnamese: "Thấp" },
+      { kanji: "新しい", reading: "あたらしい", hanViet: "Tân", vietnamese: "Mới" },
+      { kanji: "古い", reading: "ふるい", hanViet: "Cổ", vietnamese: "Cũ" },
+      { kanji: "早い", reading: "はやい", hanViet: "Tảo", vietnamese: "Sớm" },
+      { kanji: "遅い", reading: "おそい", hanViet: "Trì", vietnamese: "Muộn" },
+      { kanji: "学生", reading: "がくせい", hanViet: "Học sinh", vietnamese: "Học sinh" },
+      { kanji: "先生", reading: "せんせい", hanViet: "Tiên sinh", vietnamese: "Thầy giáo" },
+      { kanji: "学校", reading: "がっこう", hanViet: "Học đường", vietnamese: "Trường học" },
+      { kanji: "日本", reading: "にほん", hanViet: "Nhật Bản", vietnamese: "Nhật Bản" },
+      { kanji: "東京", reading: "とうきょう", hanViet: "Đông Kinh", vietnamese: "Tokyo" },
+      { kanji: "山本", reading: "やまもと", hanViet: "Sơn Bản", vietnamese: "Yamamoto" },
+      { kanji: "川口", reading: "かわぐち", hanViet: "Hà Khẩu", vietnamese: "Kawaguchi" },
+      { kanji: "木村", reading: "きむら", hanViet: "Mộc Thôn", vietnamese: "Kimura" },
+      { kanji: "友達", reading: "ともだち", hanViet: "Bằng hữu", vietnamese: "Bạn bè" },
+      { kanji: "家族", reading: "かぞく", hanViet: "Gia tộc", vietnamese: "Gia đình" },
+      { kanji: "仕事", reading: "しごと", hanViet: "Sĩ sự", vietnamese: "Công việc" },
+      { kanji: "時間", reading: "じかん", hanViet: "Thời gian", vietnamese: "Thời gian" },
+      { kanji: "曜日", reading: "ようび", hanViet: "Diệu nhật", vietnamese: "Ngày trong tuần" },
+      { kanji: "月曜日", reading: "げつようび", hanViet: "Nguyệt diệu nhật", vietnamese: "Thứ hai" },
+      { kanji: "火曜日", reading: "かようび", hanViet: "Hỏa diệu nhật", vietnamese: "Thứ ba" },
+      { kanji: "水曜日", reading: "すいようび", hanViet: "Thủy diệu nhật", vietnamese: "Thứ tư" },
+      { kanji: "木曜日", reading: "もくようび", hanViet: "Mộc diệu nhật", vietnamese: "Thứ năm" },
+      { kanji: "金曜日", reading: "きんようび", hanViet: "Kim diệu nhật", vietnamese: "Thứ sáu" },
+      { kanji: "土曜日", reading: "どようび", hanViet: "Thổ diệu nhật", vietnamese: "Thứ bảy" },
+      { kanji: "日曜日", reading: "にちようび", hanViet: "Nhật diệu nhật", vietnamese: "Chủ nhật" },
+      { kanji: "朝", reading: "あさ", hanViet: "Triều", vietnamese: "Buổi sáng" },
+      { kanji: "昼", reading: "ひる", hanViet: "Trú", vietnamese: "Buổi trưa" },
+      { kanji: "夜", reading: "よる", hanViet: "Dạ", vietnamese: "Buổi tối" },
+      { kanji: "今", reading: "いま", hanViet: "Kim", vietnamese: "Bây giờ" },
+      { kanji: "前", reading: "まえ", hanViet: "Tiền", vietnamese: "Trước" },
+      { kanji: "後", reading: "あと", hanViet: "Hậu", vietnamese: "Sau" },
+      { kanji: "右", reading: "みぎ", hanViet: "Hữu", vietnamese: "Phải" },
+      { kanji: "左", reading: "ひだり", hanViet: "Tả", vietnamese: "Trái" },
+      { kanji: "上", reading: "うえ", hanViet: "Thượng", vietnamese: "Trên" },
+      { kanji: "下", reading: "した", hanViet: "Hạ", vietnamese: "Dưới" },
+      { kanji: "中", reading: "なか", hanViet: "Trung", vietnamese: "Giữa" },
+      { kanji: "外", reading: "そと", hanViet: "Ngoại", vietnamese: "Ngoài" },
+      { kanji: "東", reading: "ひがし", hanViet: "Đông", vietnamese: "Đông" },
+      { kanji: "西", reading: "にし", hanViet: "Tây", vietnamese: "Tây" },
+      { kanji: "南", reading: "みなみ", hanViet: "Nam", vietnamese: "Nam" },
+      { kanji: "北", reading: "きた", hanViet: "Bắc", vietnamese: "Bắc" },
+      { kanji: "入る", reading: "はいる", hanViet: "Nhập", vietnamese: "Vào" },
+      { kanji: "出る", reading: "でる", hanViet: "Xuất", vietnamese: "Ra" },
+      { kanji: "見る", reading: "みる", hanViet: "Kiến", vietnamese: "Nhìn" },
+      { kanji: "聞く", reading: "きく", hanViet: "Văn", vietnamese: "Nghe" },
+      { kanji: "言う", reading: "いう", hanViet: "Ngôn", vietnamese: "Nói" },
+
+      { kanji: "今朝はとても寒いです", reading: "けさはとてもさむいです", hanViet: "", vietnamese: "Buổi sáng nay rất lạnh" },
+      { kanji: "毎日学校へ行きます", reading: "まいにちがっこうへいきます", hanViet: "", vietnamese: "Mỗi ngày tôi đi học" },
+      { kanji: "今週はとても忙しいです", reading: "こんしゅうはとてもいそがしいです", hanViet: "", vietnamese: "Tuần này rất bận" },
+      { kanji: "電車は毎日遅れます", reading: "でんしゃはまいにちおくれます", hanViet: "", vietnamese: "Xe điện mỗi ngày bị trễ" },
+      { kanji: "新しい本を買います", reading: "あたらしいほんをかいます", hanViet: "", vietnamese: "Tôi mua sách mới" },
+      { kanji: "毎日新聞を読みます", reading: "まいにちしんぶんをよみます", hanViet: "", vietnamese: "Mỗi ngày tôi đọc báo" },
+      { kanji: "朝ご飯を食べます", reading: "あさごはんをたべます", hanViet: "", vietnamese: "Tôi ăn sáng" },
+      { kanji: "昼ご飯を食べます", reading: "ひるごはんをたべます", hanViet: "", vietnamese: "Tôi ăn trưa" },
+      { kanji: "夜ご飯を食べます", reading: "よるごはんをたべます", hanViet: "", vietnamese: "Tôi ăn tối" },
+      { kanji: "電車に乗ります", reading: "でんしゃにのります", hanViet: "", vietnamese: "Tôi đi tàu điện" },
+      { kanji: "友達と話します", reading: "ともだちとはなします", hanViet: "", vietnamese: "Tôi nói chuyện với bạn" },
+      { kanji: "毎日勉強します", reading: "まいにちべんきょうします", hanViet: "", vietnamese: "Mỗi ngày tôi học" },
+      { kanji: "部屋をきれいにします", reading: "へやをきれいにします", hanViet: "", vietnamese: "Tôi dọn phòng sạch sẽ" },
+      { kanji: "本を読みます", reading: "ほんをよみます", hanViet: "", vietnamese: "Tôi đọc sách" },
+      { kanji: "音楽を聞きます", reading: "おんがくをききます", hanViet: "", vietnamese: "Tôi nghe nhạc" },
+      { kanji: "テレビを見ます", reading: "てれびをみます", hanViet: "", vietnamese: "Tôi xem TV" },
+      { kanji: "ゲームをします", reading: "げーむをします", hanViet: "", vietnamese: "Tôi chơi game" },
+      { kanji: "犬が好きです", reading: "いぬがすきです", hanViet: "", vietnamese: "Tôi thích chó" },
+      { kanji: "猫が好きです", reading: "ねこがすきです", hanViet: "", vietnamese: "Tôi thích mèo" },
+      { kanji: "友達と遊びます", reading: "ともだちとあそびます", hanViet: "", vietnamese: "Tôi chơi với bạn" },
+      { kanji: "公園で遊びます", reading: "こうえんであそびます", hanViet: "", vietnamese: "Tôi chơi ở công viên" },
+      { kanji: "毎日本を読みます", reading: "まいにちほんをよみます", hanViet: "", vietnamese: "Mỗi ngày tôi đọc sách" },
+      { kanji: "学校で勉強します", reading: "がっこうでべんきょうします", hanViet: "", vietnamese: "Tôi học ở trường" },
+      { kanji: "先生と話します", reading: "せんせいとはなします", hanViet: "", vietnamese: "Tôi nói chuyện với thầy" },
+      { kanji: "お菓子を食べます", reading: "おかしをたべます", hanViet: "", vietnamese: "Tôi ăn bánh kẹo" },
+      { kanji: "水を飲みます", reading: "みずをのみます", hanViet: "", vietnamese: "Tôi uống nước" },
+      { kanji: "宿題をします", reading: "しゅくだいをします", hanViet: "", vietnamese: "Tôi làm bài tập" },
+      { kanji: "部屋を掃除します", reading: "へやをそうじします", hanViet: "", vietnamese: "Tôi dọn phòng" },
+      { kanji: "毎日運動します", reading: "まいにちうんどうします", hanViet: "", vietnamese: "Mỗi ngày tôi tập thể dục" },
+      { kanji: "友達と電話します", reading: "ともだちとでんわします", hanViet: "", vietnamese: "Tôi gọi điện cho bạn" },
+      { kanji: "映画を見ます", reading: "えいがをみます", hanViet: "", vietnamese: "Tôi xem phim" },
+      { kanji: "音楽を聴きます", reading: "おんがくをききます", hanViet: "", vietnamese: "Tôi nghe nhạc" },
+      { kanji: "学校へ行きます", reading: "がっこうへいきます", hanViet: "", vietnamese: "Tôi đi học" },
+      { kanji: "本を借ります", reading: "ほんをかります", hanViet: "", vietnamese: "Tôi mượn sách" },
+      { kanji: "図書館へ行きます", reading: "としょかんへいきます", hanViet: "", vietnamese: "Tôi đi thư viện" },
+      { kanji: "毎日日本語を勉強します", reading: "まいにちにほんごをべんきょうします", hanViet: "", vietnamese: "Mỗi ngày tôi học tiếng Nhật" },
+      { kanji: "東京のことは分かりませんが、会社の住所を見ておきます", reading: "とうきょうのことはわかりませんが、かいしゃのじゅうしょをみておきます", hanViet: "", vietnamese: "Tôi không biết về Tokyo nhưng sẽ xem địa chỉ công ty" },
+      { kanji: "漢字を毎日習っていますが、まだ上手ではありません", reading: "かんじをまいにちならっていますが、まだじょうずではありません", hanViet: "", vietnamese: "Tôi học kanji mỗi ngày nhưng vẫn chưa giỏi" },
+      { kanji: "図書館で長い時間、世界の新聞を読んでいます", reading: "としょかんでながいじかん、せかいのしんぶんをよんでいます", hanViet: "", vietnamese: "Tôi đọc báo thế giới trong thời gian dài ở thư viện" },
+      { kanji: "春ー夏ー秋ー冬があり、いつも友達がそばにいて楽しいです", reading: "はるーなつーあきーふゆがあり、いつもともだちがそばにいてたのしいです。", hanViet: "", vietnamese: "Có bốn mùa, luôn có bạn bên cạnh nên vui" },
+      { kanji: "家内は週に3回病院へ行きます。家が近いので便利です", reading: "かないはしゅうにさんかいびょういんへいきます。いえがちかいのでべんりです", hanViet: "", vietnamese: "Vợ tôi đi bệnh viện 3 lần/tuần, nhà gần nên tiện" },
+      { kanji: "私の時計はかなり古いですが、まだ使いたいです", reading: "わたしのとけいはかなりふるいですが、まだつかいたいです", hanViet: "", vietnamese: "Đồng hồ của tôi khá cũ nhưng tôi vẫn muốn dùng" },
+      { kanji: "その場所を知らないので、地図を見て知りたいです", reading: "そのばしょをしらないので、ちずをみてしりたいです", hanViet: "", vietnamese: "Tôi không biết chỗ đó nên muốn xem bản đồ để biết" },
+      { kanji: "何か買いたかったら、あの店が安いと言われています", reading: "なにかかいたかったら、あのみせがやすいといされています", hanViet: "", vietnamese: "Nếu bạn muốn mua gì thì cửa hàng kia được nói là rẻ" },
+      { kanji: "何か書きたかったら、紙とペンを使って自分で書いてください", reading: "なにかかきたかったら、かみとぺんをつかってじぶんでかいてください", hanViet: "", vietnamese: "Nếu bạn muốn viết gì thì hãy dùng giấy và bút để tự viết" },
+      { kanji: "今日の天気がいいので、窓を開けてもいいですか？", reading: "きょうのてんきがいいので、まどをあけてもいいですか？", hanViet: "", vietnamese: "Thời tiết hôm nay đẹp, tôi có thể mở cửa sổ không?" },
+      { kanji: "歌が好きな人もいるので、彼女とカラオケに行かないといけません", reading: "うたがすきなひともいるので、かのじょとからおけにいかないといけません", hanViet: "", vietnamese: "Vì có người thích hát, tôi phải đi karaoke với cô ấy" },
+      { kanji: "何か聞きたかったら、音楽のCDを借ります", reading: "なにかききたかったら、おんがくのCDをかります", hanViet: "", vietnamese: "Nếu bạn muốn nghe gì thì tôi sẽ mượn CD nhạc" },
+      { kanji: "何か見たかったら、一緒に映画を見に行かない", reading: "なにかみたかったら、いっしょにえいがをみにいかない", hanViet: "", vietnamese: "Nếu muốn xem gì đó, có đi xem phim cùng nhau không?" },
+      { kanji: "全部じゅんびしたら、持たなくても大丈夫です", reading: "ぜんぶじゅんびしたら、もたなくてもだいじょうぶです", hanViet: "", vietnamese: "Nếu chuẩn bị tất cả, thì không cần mang theo cũng không sao." },
+      { kanji: "どこに車を止めてもいいですか", reading: "どこにくるまをやめてもいいですか", hanViet: "", vietnamese: "Tôi có thể đậu xe ở đâu?" },
+
+  { "kanji": "日本に行ったら、美味しいすしを食べたいです。", "reading": "にほんにいったら、おいしいすしをたべたいです", "vietnamese": "Nếu đến Nhật, tôi muốn ăn sushi ngon." },
+  { "kanji": "雨が降ったら、傘を持って行きますか。", "reading": "あめがふったら、かさをもっていきますか", "vietnamese": "Nếu trời mưa, bạn nên mang ô." },
+  { "kanji": "お金があったら、新しい車を買います。", "reading": "おかねがあったら、あたらしいくるまをかいます", "vietnamese": "Nếu có tiền, tôi sẽ mua xe mới." },
+  { "kanji": "時間があれば、本を読みます。", "reading": "じかんがあれば、ほんをよみます", "vietnamese": "Nếu có thời gian, tôi sẽ đọc sách." },
+  { "kanji": "友達に会ったら、映画を見に行きます。", "reading": "ともだちにあったら、えいがをみにいきます", "vietnamese": "Nếu gặp bạn bè, tôi sẽ đi xem phim." },
+  { "kanji": "疲れたら、少し休んでください。", "reading": "つかれたら、すこしやすんでください", "vietnamese": "Nếu mệt, hãy nghỉ ngơi một chút." },
+  { "kanji": "寒かったら、あたたかい服を着ましょう。", "reading": "さむかったら、あたたかいふくをきましょう", "vietnamese": "Nếu trời lạnh, hãy mặc quần áo ấm." },
+  { "kanji": "しけんが終わったら、旅行に行きたいです。", "reading": "しけんがおわったら、りょこうにいきたいです", "vietnamese": "Nếu kỳ thi kết thúc, tôi muốn đi du lịch." },
+  { "kanji": "家に帰ったら、すぐに寝ます。", "reading": "いえにかえったら、すぐにねます", "vietnamese": "Nếu về nhà, tôi sẽ ngủ ngay." },
+
+  { "kanji": "毎朝六時に起きて、朝ごはんを食べてから学校に行きます", "reading": "まいあさろくじにおきて、あさごはんをたべてからがっこうにいきます", "vietnamese": "Mỗi sáng tôi thức dậy lúc 6 giờ, ăn sáng rồi đi học" },
+  { "kanji": "公園で友達と遊んでから、家に帰って宿題をします", "reading": "こうえんでともだちとあそんでから、いえにかえってしゅくだいをします", "vietnamese": "Chơi với bạn ở công viên rồi về nhà làm bài tập" },
+  { "kanji": "日本語を勉強するために毎日一時間本を読んでいます", "reading": "にほんごをべんきょうするためにまいにちいちじかんほんをよんでいます", "vietnamese": "Mỗi ngày tôi đọc sách một giờ để học tiếng Nhật" },
+  { "kanji": "雨が降ったら外に出ないで家で映画を見ます", "reading": "あめがふったらそとにでないでいえでえいがをみます", "vietnamese": "Nếu trời mưa, tôi không ra ngoài mà ở nhà xem phim" },
+  { "kanji": "家族と一緒に旅行することが好きで、いつも写真をたくさん撮ります", "reading": "かぞくといっしょにりょこうすることがすきで、いつもしゃしんをたくさんとります", "vietnamese": "Tôi thích đi du lịch cùng gia đình và luôn chụp nhiều ảnh" },
+  { "kanji": "昨日の夜はとても寒かったので、あたたかいお茶を飲みました", "reading": "きのうのよるはとてもさむかったので、あたたかいおちゃをのみました", "vietnamese": "Tối hôm qua trời rất lạnh nên tôi đã uống trà nóng" },
+  { "kanji": "駅まで歩いて行くのは大変ですが、電車に乗るのが楽しいです", "reading": "えきまであるいていくのはたいへんですが、でんしゃにのるのがたのしいです", "vietnamese": "Đi bộ đến ga thì vất vả nhưng đi tàu thì rất vui" },
+  { "kanji": "誕生日に友達がプレゼントをくれて、とても嬉しかったです", "reading": "たんじょうびにともだちがぷれぜんとをくれて、とてもうれしかったです", "vietnamese": "Sinh nhật tôi, bạn đã tặng quà nên tôi rất vui" },
+  { "kanji": "週末は公園でジョギングをしたり、カフェでコーヒーを飲んだりします", "reading": "しゅうまつはこうえんでじょぎんぐをしたり、かふぇでこーひーをのんだりします", "vietnamese": "Cuối tuần tôi chạy bộ ở công viên hoặc uống cà phê ở quán" },
+  { "kanji": "日本へ行ったら、たくさんおいしい食べ物を食べてみたいです", "reading": "にほんへいったら、たくさんおいしいたべものをたべてみたいです", "vietnamese": "Nếu đến Nhật, tôi muốn thử nhiều món ăn ngon" },
+
+      { kanji: "早く起きると元気になります。軽いか重いかは大切ではありません", reading: "はやくおきるとげんきになります。かるいかおもいかはだいじではありません", hanViet: "", vietnamese: "Thức dậy sớm thì khỏe, nhẹ hay nặng không quan trọng" }
+    ];
+
+    let shuffledKanji = [...kanjiList];
+    let currentIndex = 0;
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadKanji() {
+      const currentKanji = document.getElementById('current-kanji');
+      const kanjiInfo = document.getElementById('kanji-info');
+      const modal = document.getElementById('modal');
+      modal.style.display = 'none';
+      if (currentIndex < shuffledKanji.length) {
+        const current = shuffledKanji[currentIndex].kanji;
+        kanjiInfo.innerHTML = `Hán Việt: ${shuffledKanji[currentIndex].hanViet || ''}`;
+        currentKanji.textContent = current;
+
+        // Điều chỉnh kích thước chữ dựa trên độ dài của kanji
+        const length = current.length;
+        if (length <= 2) {
+          currentKanji.style.fontSize = 'clamp(5vw, 120px, 15vw)';
+        } else if (length <= 5) {
+          currentKanji.style.fontSize = 'clamp(4vw, 80px, 10vw)';
+        } else {
+          currentKanji.style.fontSize = 'clamp(3vw, 50px, 7vw)';
+        }
+
+        document.getElementById('user-input').value = '';
+        document.getElementById('result').innerHTML = '';
+      } else {
+        currentKanji.textContent = '練習が終りました！';
+        kanjiInfo.innerHTML = '';
+        document.getElementById('user-input').style.display = 'none';
+      }
+    }
+
+    function checkAnswer() {
+      const userInput = document.getElementById('user-input').value.trim().toLowerCase();
+      const correctAnswer = shuffledKanji[currentIndex].reading.toLowerCase();
+      const resultDiv = document.getElementById('result');
+      if (correctAnswer === userInput) {
+        resultDiv.innerHTML = '正しいです！';
+        currentIndex++;
+        setTimeout(() => {
+          loadKanji();
+        }, 1000);
+      } else {
+        resultDiv.innerHTML = '違います。もう 一回 書いてください。';
+      }
+    }
+
+    function showAnswer() {
+      const modal = document.getElementById('modal');
+      const modalAnswer = document.getElementById('modal-answer');
+      const modalVietnamese = document.getElementById('modal-vietnamese');
+      const current = shuffledKanji[currentIndex];
+      if (current) {
+        modalAnswer.textContent = `Đáp án: ${current.reading}`;
+        modalVietnamese.textContent = `Tiếng Việt: ${current.vietnamese || 'Chưa có nghĩa'}`;
+        modal.style.display = 'flex';
+        document.getElementById('user-input').style.display = 'none';
+        document.getElementById('result').innerHTML = '';
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.style.display = 'none';
+      currentIndex++;
+      loadKanji();
+      document.getElementById('user-input').style.display = 'block';
+    }
+
+    // Add Enter key support
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkAnswer();
+      }
+    });
+
+    // Initialize with shuffled kanji
+    shuffledKanji = shuffleArray(shuffledKanji);
+    loadKanji();
+  </script>
+</body>
+</html>
