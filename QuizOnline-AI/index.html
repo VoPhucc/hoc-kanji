@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Kiểm Tra Online</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-container">
+        <h1>Kiểm Tra Kiến Thức</h1>
+        <div class="quiz-header">
+            <p id="progress-text">Câu hỏi 1 / X</p>
+            <p id="score-text">Điểm: 0</p>
+        </div>
+        <div id="question-area">
+            <h2 id="question-text">Câu hỏi sẽ hiện ở đây...</h2>
+            <input type="text" id="answer-input" placeholder="Nhập câu trả lời của bạn...">
+        </div>
+        <button id="submit-btn">Nộp Bài</button>
+        <p id="feedback-text"></p>
+    </div>
+
+    <div class="results-container" id="results-container" style="display: none;">
+        <h1>Hoàn Thành!</h1>
+        <p id="final-score-text">Bạn đã trả lời đúng X / Y câu.</p>
+        <button id="restart-btn">Làm Lại</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
